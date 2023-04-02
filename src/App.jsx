@@ -1,5 +1,10 @@
+
+import React from 'react';
 import Chat from './components/Chat';
 import SignIn from './components/SignIn';
+
+
+
 import { auth } from './components/firebase-config';
 import { useAuthState } from 'react-firebase-hooks/auth';
 
