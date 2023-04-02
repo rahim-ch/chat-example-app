@@ -1,44 +1,80 @@
-import React from 'react'
+import React, { Component } from "react";
+import { db, auth } from "./firebase-config";
+import SendMessage from "./SendMessage";
+import {
+  collection,
+  query,
+  limit,
+  orderBy,
+  onSnapshot,
+} from "firebase/firestore";
 
-const Chat = () => {
-  return (
-    <div class="flex flex-col h-screen">
-    <div class="flex-1 bg-gray-100 p-4 overflow-y-auto">
-      <div class="flex items-end">
-        <div class="rounded-lg p-3 bg-blue-500 text-white max-w-xs w-full break-word">
-          Hello! How can I help you today?
+class Chat extends Component {
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      messages: [],
+      userID: auth.currentUser.userID,
+    };
+  }
+
+  componentDidMount() {
+    const q = query(
+      collection(db, "messages"),
+      orderBy("createdAt"),
+      limit(50)
+    );
+    const data = onSnapshot(q, (QuerySnapshot) => {
+      let messages = [];
+      QuerySnapshot.forEach((doc) => {
+        messages.push({ ...doc.data(), id: doc.id });
+      });
+      this.setState({ messages });
+    });
+
+    this.unsubscribe = data;
+  }
+
+  componentWillUnmount() {
+    this.unsubscribe();
+  }
+
+  render() {
+    const { messages } = this.state;
+    const { uid, photoURL } = auth.currentUser;
+
+    return (
+      <div className="flex flex-col h-screen">
+        <div className="flex items-center justify-between py-4 px-6 bg-gray-900 text-white">
+          <h1 className="text-xl font-bold">Chat App</h1>
         </div>
-        <div class="ml-2 text-xs text-gray-500 self-end">
-          3:30pm
+        <div className="flex-grow p-6 overflow-y-scroll custom-scroll">
+          {messages &&
+            messages.map((message) => {
+              const alignClass =
+              uid === message.uid ? "self-end" : "self-start";
+              const containerClass =
+              uid === message.uid ? "ml-auto" : "mr-auto";
+              return (
+                <div
+                  key={message.id}
+                  className={`flex flex-col mb-4 ${alignClass}`}
+                >
+                  <div
+                    className={`bg-gray-200 py-2 px-4 flex rounded-lg max-w-lg ${containerClass}`}
+                  >
+                    <img src={message.photoURL} className="message-img" />
+                    <p className="text-gray-900">{message.text}</p>
+                  </div>
+                </div>
+              );
+            })}
         </div>
+        <SendMessage />
       </div>
-      <div class="flex items-end mt-4">
-        <div class="rounded-lg p-3 bg-gray-300 max-w-xs w-full break-word">
-          I'm having trouble with my account.
-        </div>
-        <div class="ml-2 text-xs text-gray-500 self-end">
-          3:31pm
-        </div>
-      </div>
-      <div class="flex items-end mt-4">
-        <div class="rounded-lg p-3 bg-blue-500 text-white max-w-xs w-full break-word">
-          Sure thing! Can you tell me your username?
-        </div>
-        <div class="ml-2 text-xs text-gray-500 self-end">
-          3:32pm
-        </div>
-      </div>
-    </div>
-    <div class="p-4 bg-gray-100">
-      <div class="flex">
-        <input type="text" placeholder="Type your message..." class="rounded-full w-full py-2 px-4 bg-gray-300 focus:outline-none focus:shadow-outline-blue focus:bg-white"/>
-        <button class="ml-4 bg-blue-500 text-white rounded-full px-6 py-2 font-semibold">Send</button>
-      </div>
-    </div>
-  </div>
-  
-  
-  )
+    );
+  }
 }
 
-export default Chat
+export default Chat;
